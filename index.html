@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kartu Bayi Interaktif</title>
+    
+    <!-- BARU: Konfigurasi PWA -->
+    <meta name="theme-color" content="#f3f4f6"/>
+    <link rel="apple-touch-icon" href="https."
+    <link rel="manifest" href="manifest.json">
+    
+
+<script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            overflow: hidden; /* Pastikan tidak ada scroll */
+        }
+        #flashcard:focus {
+            outline: none;
+        }
+
+        /* --- Keyframes untuk Animasi --- */
+        @keyframes pop {
+            0% { transform: scale(0.9); opacity: 0.5; }
+            100% { transform: scale(1.0); opacity: 1; }
+        }
+        
+        @keyframes jiggle {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-8deg) scale(1.1); }
+            75% { transform: rotate(8deg) scale(1.1); }
+        }
+
+        /* --- Kelas Helper untuk Animasi --- */
+        .animate-pop {
+            animation: pop 0.2s ease-out;
+        }
+        .animate-jiggle {
+            animation: jiggle 0.4s ease-in-out;
+        }
+
+        /* Kelas untuk menyembunyikan elemen */
+        .hidden-menu {
+            display: none !important;
+        }
+
+        /* Fullscreen cover untuk Baby Lock */
+        .baby-lock-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 50; 
+            cursor: pointer;
+        }
+
+    </style>
+</head>
+<body class="bg-gray-100 flex flex-col h-screen select-none">
+
+    
+
+<div class="flex-grow flex items-center justify-center p-4">
+        
+
+<div id="flashcard"
+             tabindex="0"
+             role="button"
+             aria-label="Klik untuk kartu berikutnya"
+             class="w-11/12 md:w-3/4 lg:w-1/2
+                    flex flex-col items-center justify-around py-10 
+                    rounded-3xl shadow-2xl cursor-pointer
+                    transition-all duration-300 ease-in-out
+                    transform active:scale-95
+                    relative"> 
+
+            
+
+<div id="emoji-display" class="text-9xl sm:text-[12rem] md:text-[15rem] lg:text-[20rem]"></div>
+            
+            
+
+<div id="text-display" class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mt-8"></div>
+
+            
+
+<div id="baby-lock-overlay" class="baby-lock-overlay hidden"></div>
+        </div>
+    </div>
+
+    
+
+<div id="bottom-menu-wrapper" class="flex-shrink-0 z-20 p-4">
+        <div class="flex flex-col items-center gap-3">
+            
+            
+
+<div id="menu-container" class="flex flex-wrap justify-center gap-2 sm:gap-3">
+                
+
+</div>
+
+            
+
+<div id="controls-container" class="flex justify-center gap-4">
+                <button id="autoplay-button"
+                        class="flex justify-center items-center p-3 w-12 h-12 rounded-full bg-white shadow-md text-gray-700
+                               hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400">
+                    ▶️
+                </button>
+                <button id="baby-lock-button"
+                        class="flex justify-center items-center p-3 w-12 h-12 rounded-full bg-white shadow-md text-gray-700
+                               hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400">
+                    🔒
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        
+
+document.addEventListener('DOMContentLoaded', () => {
+            // --- Konten Kartu (Decks) ---
+            const decks = {
+                hewan: [
+                    { emoji: '🐮', text: 'Sapi', bgColor: 'bg-blue-300', textColor: 'text-blue-900' },
+                    { emoji: '🐱', text: 'Kucing', bgColor: 'bg-yellow-300', textColor: 'text-yellow-900' },
+                    { emoji: '🐶', text: 'Anjing', bgColor: 'bg-green-300', textColor: 'text-green-900' },
+                    { emoji: '🦆', text: 'Bebek', bgColor: 'bg-orange-300', textColor: 'text-orange-900' },
+                    { emoji: '🐘', text: 'Gajah', bgColor: 'bg-gray-300', textColor: 'text-gray-900' },
+                    { emoji: '🐒', text: 'Monyet', bgColor: 'bg-amber-300', textColor: 'text-amber-900' },
+                    { emoji: '🐔', text: 'Ayam', bgColor: 'bg-red-300', textColor: 'text-red-900' },
+                    { emoji: '🐠', text: 'Ikan', bgColor: 'bg-cyan-300', textColor: 'text-cyan-900' },
+                    { emoji: '🐎', text: 'Kuda', bgColor: 'bg-lime-300', textColor: 'text-lime-900' },
+                    { emoji: '🐦', text: 'Burung', bgColor: 'bg-purple-300', textColor: 'text-purple-900' },
+                    { emoji: '🐑', text: 'Domba', bgColor: 'bg-pink-300', textColor: 'text-pink-900' },
+                    { emoji: '🐐', text: 'Kambing', bgColor: 'bg-indigo-300', textColor: 'text-indigo-900' },
+                    { emoji: '🐷', text: 'Babi', bgColor: 'bg-rose-300', textColor: 'text-rose-900' },
+                    { emoji: '🐜', text: 'Semut', bgColor: 'bg-teal-300', textColor: 'text-teal-900' },
+                    { emoji: '🐝', text: 'Lebah', bgColor: 'bg-yellow-300', textColor: 'text-yellow-900' },
+                    { emoji: '🐸', text: 'Katak', bgColor: 'bg-green-300', textColor: 'text-green-900' },
+                    { emoji: '🦁', text: 'Singa', bgColor: 'bg-orange-300', textColor: 'text-orange-900' }
+                ],
+                warna: [
+                    { emoji: '🟥', text: 'Merah', bgColor: 'bg-red-300', textColor: 'text-red-900' },
+                    { emoji: '🟩', text: 'Hijau', bgColor: 'bg-green-300', textColor: 'text-green-900' },
+                    { emoji: '🟦', text: 'Biru', bgColor: 'bg-blue-300', textColor: 'text-blue-900' },
+                    { emoji: '🟨', text: 'Kuning', bgColor: 'bg-yellow-300', textColor: 'text-yellow-900' },
+                    { emoji: '🟧', text: 'Oranye', bgColor: 'bg-orange-300', textColor: 'text-orange-900' },
+                    { emoji: '🟪', text: 'Ungu', bgColor: 'bg-purple-300', textColor: 'text-purple-900' },
+                    { emoji: '⬛️', text: 'Hitam', bgColor: 'bg-gray-700', textColor: 'text-gray-100' },
+                    { emoji: '⬜️', text: 'Putih', bgColor: 'bg-gray-100', textColor: 'text-gray-900' },
+                    { emoji: '🟫', text: 'Cokelat', bgColor: 'bg-yellow-700', textColor: 'text-yellow-100' },
+                    { emoji: '🌸', text: 'Pink', bgColor: 'bg-pink-300', textColor: 'text-pink-900' },
+                    { emoji: '🐘', text: 'Abu-abu', bgColor: 'bg-gray-400', textColor: 'text-gray-900' }
+                ],
+                angka: [
+                    { emoji: '1️⃣', text: 'Satu', bgColor: 'bg-sky-300', textColor: 'text-sky-900' },
+                    { emoji: '2️⃣', text: 'Dua', bgColor: 'bg-lime-300', textColor: 'text-lime-900' },
+                    { emoji: '3️⃣', text: 'Tiga', bgColor: 'bg-pink-300', textColor: 'text-pink-900' },
+                    { emoji: '4️⃣', text: 'Empat', bgColor: 'bg-amber-300', textColor: 'text-amber-900' },
+                    { emoji: '5️⃣', text: 'Lima', bgColor: 'bg-teal-300', textColor: 'text-teal-900' },
+                    { emoji: '6️⃣', text: 'Enam', bgColor: 'bg-indigo-300', textColor: 'text-indigo-900' },
+                    { emoji: '7️⃣', text: 'Tujuh', bgColor: 'bg-rose-300', textColor: 'text-rose-900' },
+                    { emoji: '8️⃣', text: 'Delapan', bgColor: 'bg-emerald-300', textColor: 'text-emerald-900' },
+                    { emoji: '9️⃣', text: 'Sembilan', bgColor: 'bg-fuchsia-300', textColor: 'text-fuchsia-900' },
+                    { emoji: '🔟', text: 'Sepuluh', bgColor: 'bg-orange-300', textColor: 'text-orange-900' }
+                ],
+                benda: [
+                    { emoji: '🚗', text: 'Mobil', bgColor: 'bg-red-300', textColor: 'text-red-900' },
+                    { emoji: '⚽️', text: 'Bola', bgColor: 'bg-purple-300', textColor: 'text-purple-900' },
+                    { emoji: '🌳', text: 'Pohon', bgColor: 'bg-lime-300', textColor: 'text-lime-900' },
+                    { emoji: '🍎', text: 'Apel', bgColor: 'bg-pink-300', textColor: 'text-pink-900' },
+                    { emoji: '☀️', text: 'Matahari', bgColor: 'bg-amber-300', textColor: 'text-amber-900' },
+                    { emoji: '🌙', text: 'Bulan', bgColor: 'bg-indigo-300', textColor: 'text-indigo-900' },
+                    { emoji: '🏠', text: 'Rumah', bgColor: 'bg-cyan-300', textColor: 'text-cyan-900' },
+                    { emoji: '🌸', text: 'Bunga', bgColor: 'bg-rose-300', textColor: 'text-rose-900' },
+                    { emoji: '📖', text: 'Buku', bgColor: 'bg-blue-300', textColor: 'text-blue-900' },
+                    { emoji: '👟', text: 'Sepatu', bgColor: 'bg-green-300', textColor: 'text-green-900' },
+                    { emoji: '🥄', text: 'Sendok', bgColor: 'bg-gray-300', textColor: 'text-gray-900' },
+                    { emoji: '🥛', text: 'Susu', bgColor: 'bg-gray-100', textColor: 'text-gray-900' }
+                ],
+                buah: [
+                    { emoji: '🍌', text: 'Pisang', bgColor: 'bg-yellow-300', textColor: 'text-yellow-900' },
+                    { emoji: '🍊', text: 'Jeruk', bgColor: 'bg-orange-300', textColor: 'text-orange-900' },
+                    { emoji: '🍉', text: 'Semangka', bgColor: 'bg-red-300', textColor: 'text-red-900' },
+                    { emoji: '🍇', text: 'Anggur', bgColor: 'bg-purple-300', textColor: 'text-purple-900' },
+                    { emoji: '🍓', text: 'Stroberi', bgColor: 'bg-pink-300', textColor: 'text-pink-900' },
+                    { emoji: '🍍', text: 'Nanas', bgColor: 'bg-yellow-400', textColor: 'text-yellow-900' }
+                ],
+                huruf: [] 
+            };
+
+            const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            const colors = [
+                { bg: 'bg-red-300', text: 'text-red-900' },
+                { bg: 'bg-blue-300', text: 'text-blue-900' },
+                { bg: 'bg-green-300', text: 'text-green-900' },
+                { bg: 'bg-yellow-300', text: 'text-yellow-900' },
+                { bg: 'bg-purple-300', text: 'text-purple-900' },
+                { bg: 'bg-orange-300', text: 'text-orange-900' },
+                { bg: 'bg-pink-300', text: 'text-pink-900' },
+                { bg: 'bg-teal-300', text: 'text-teal-900' }
+            ];
+
+            for (let i = 0; i < alphabet.length; i++) {
+                const char = alphabet[i];
+                const color = colors[i % colors.length];
+                decks.huruf.push({
+                    emoji: char,
+                    text: char,
+                    bgColor: color.bg,
+                    textColor: color.text
+                });
+            }
+            
+            // --- State Aplikasi ---
+            let activeDeck = 'hewan'; 
+            let currentIndices = {};
+            Object.keys(decks).forEach(key => {
+                currentIndices[key] = 0;
+            });
+            let isBabyLocked = false;
+            let isAutoplayActive = false;
+            let autoplayInterval;
+
+            const allColorClasses = Object.values(decks)
+                .flat()
+                .flatMap(c => [c.bgColor, c.textColor]);
+
+            // Ambil elemen dari HTML
+            const cardElement = document.getElementById('flashcard');
+            const emojiElement = document.getElementById('emoji-display');
+            const textElement = document.getElementById('text-display');
+            const menuContainer = document.getElementById('menu-container');
+            const babyLockButton = document.getElementById('baby-lock-button');
+            const autoplayButton = document.getElementById('autoplay-button');
+            const babyLockOverlay = document.getElementById('baby-lock-overlay');
+            const bottomMenuWrapper = document.getElementById('bottom-menu-wrapper'); 
+
+            // --- Logika Suara ---
+            let voices = [];
+            let femaleIndonesianVoice = null;
+
+            function loadVoices() {
+                voices = window.speechSynthesis.getVoices();
+                femaleIndonesianVoice = voices.find(voice => 
+                    voice.lang === 'id-ID' && 
+                    (voice.name.includes('Female') || voice.name.includes('Wanita'))
+                );
+                
+                // Fallback jika tidak ada suara perempuan
+                if (!femaleIndonesianVoice) {
+                    femaleIndonesianVoice = voices.find(voice => voice.lang === 'id-ID');
+                }
+            }
+            
+            loadVoices();
+            if (window.speechSynthesis.onvoiceschanged !== undefined) {
+                window.speechSynthesis.onvoiceschanged = loadVoices;
+            }
+
+
+            // --- Fungsi Text-to-Speech (TTS) ---
+            function speak(text) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'id-ID';
+                utterance.rate = 0.9;
+                
+                if (femaleIndonesianVoice) {
+                    utterance.voice = femaleIndonesianVoice;
+                }
+                
+                window.speechSynthesis.speak(utterance);
+            }
+
+            // --- Fungsi untuk Menampilkan Kartu ---
+            function showCard() {
+                const deck = decks[activeDeck];
+                const index = currentIndices[activeDeck];
+                const card = deck[index];
+
+                if (!cardElement || !emojiElement) {
+                    console.error("Elemen kartu tidak ditemukan!");
+                    return;
+                }
+
+                cardElement.classList.remove(...allColorClasses);
+                cardElement.classList.remove('animate-pop');
+                emojiElement.classList.remove('animate-jiggle');
+
+                cardElement.classList.add(card.bgColor, card.textColor);
+                
+                emojiElement.textContent = card.emoji;
+                textElement.textContent = card.text;
+                
+                void cardElement.offsetWidth; 
+                cardElement.classList.add('animate-pop');
+                
+                void emojiElement.offsetWidth;
+                emojiElement.classList.add('animate-jiggle');
+            }
+
+            // --- Event Listener untuk Interaksi ---
+            function nextCard(event) {
+                if (isBabyLocked && event && event.target !== babyLockOverlay) {
+                    return; 
+                }
+
+                if (isAutoplayActive) {
+                    toggleAutoplay(); 
+                }
+
+                const deck = decks[activeDeck];
+                currentIndices[activeDeck] = (currentIndices[activeDeck] + 1) % deck.length;
+                
+                showCard();
+                
+                const newCard = deck[currentIndices[activeDeck]];
+                speak(newCard.text);
+            }
+
+            cardElement.addEventListener('click', nextCard);
+            babyLockOverlay.addEventListener('click', nextCard);
+            
+            cardElement.addEventListener('keydown', (e) => {
+                if (e.code === 'Enter' || e.code === 'Space') {
+                    e.preventDefault(); 
+                    nextCard(e);
+                }
+            });
+
+            // --- Logika Baby Lock ---
+            babyLockButton.addEventListener('click', toggleBabyLock);
+
+            function toggleBabyLock() {
+                isBabyLocked = !isBabyLocked;
+                if (isBabyLocked) {
+                    bottomMenuWrapper.classList.add('hidden');
+                    babyLockButton.innerHTML = '🔓'; 
+                    babyLockOverlay.classList.remove('hidden'); 
+                    if (isAutoplayActive) {
+                        toggleAutoplay();
+                    }
+                } else {
+                    bottomMenuWrapper.classList.remove('hidden');
+                    babyLockButton.innerHTML = '🔒'; 
+                    babyLockOverlay.classList.add('hidden'); 
+                }
+            }
+            
+            // --- Logika Autoplay ---
+            autoplayButton.addEventListener('click', toggleAutoplay);
+
+            function toggleAutoplay() {
+                isAutoplayActive = !isAutoplayActive;
+                if (isAutoplayActive) {
+                    autoplayButton.innerHTML = '⏸️'; 
+                    autoplayInterval = setInterval(() => {
+                        nextCard(); 
+                    }, 3000); 
+                    if (!isBabyLocked) {
+                        toggleBabyLock(); 
+                    }
+                } else {
+                    autoplayButton.innerHTML = '▶️'; 
+                    clearInterval(autoplayInterval);
+                    if (isBabyLocked && bottomMenuWrapper.classList.contains('hidden')) { 
+                         toggleBabyLock();
+                    }
+                }
+            }
+            
+            // --- Logika Menu ---
+            function switchDeck(deckName) {
+                if (!decks[deckName]) return; 
+                activeDeck = deckName;
+                showCard(); 
+                updateMenuButtons();
+
+                const newCard = decks[activeDeck][currentIndices[activeDeck]];
+                speak(newCard.text);
+            }
+
+            function updateMenuButtons() {
+                const buttons = menuContainer.querySelectorAll('button');
+                buttons.forEach(button => {
+                    const deckName = button.getAttribute('data-deck');
+                    if (deckName === activeDeck) {
+                        button.classList.add('bg-blue-500', 'text-white');
+                        button.classList.remove('bg-white', 'text-gray-700');
+                    } else {
+                        button.classList.remove('bg-blue-500', 'text-white');
+                        button.classList.add('bg-white', 'text-gray-700');
+                    }
+                });
+            }
+
+            // --- Pemuatan Awal ---
+            const buttonConfig = {
+                hewan: { icon: '🐶', label: 'Hewan' },
+                warna: { icon: '🎨', label: 'Warna' },
+                angka: { icon: '1️⃣', label: 'Angka' },
+                huruf: { icon: 'A', label: 'Huruf' },
+                benda: { icon: '🚗', label: 'Benda' },
+                buah: { icon: '🍉', label: 'Buah' }
+            };
+
+            Object.keys(decks).forEach(deckName => {
+                const config = buttonConfig[deckName];
+                const button = document.createElement('button');
+                
+                button.innerHTML = `<span class="text-lg">${config.icon}</span><span class="ml-2 font-medium text-sm">${config.label}</span>`;
+                button.setAttribute('data-deck', deckName);
+                button.className = 'flex items-center justify-center px-4 py-2 rounded-full shadow-md font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400';
+                
+                button.onclick = () => switchDeck(deckName);
+                menuContainer.appendChild(button);
+            });
+
+            showCard();
+            updateMenuButtons();
+        });
+
+        
+// --- BARU: Pendaftaran Service Worker PWA ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('ServiceWorker PWA berhasil didaftarkan: ', registration);
+                    })
+                    .catch(error => {
+                        console.log('Pendaftaran ServiceWorker PWA gagal: ', error);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>
